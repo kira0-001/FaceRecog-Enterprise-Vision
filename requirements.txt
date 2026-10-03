@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+websockets
+python-multipart
+numpy
+opencv-python
+face_recognition
+gradio

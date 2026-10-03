@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large model files — auto-downloaded at startup
+models/*.caffemodel
+
+# Database and uploaded images
+faces.db
+known_faces/
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment Variables
+.env
+
+# Models (if downloaded locally, depending on setup)
+# models/

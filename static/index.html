@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceRecog — Enterprise Vision Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2310b981%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 7V5a2 2 0 0 1 2-2h2%22/><path d=%22M17 3h2a2 2 0 0 1 2 2v2%22/><path d=%22M21 17v2a2 2 0 0 1-2 2h-2%22/><path d=%22M7 21H5a2 2 0 0 1-2-2v-2%22/><path d=%22M8 14s1.5 2 4 2 4-2 4-2%22/><line x1=%229%22 y1=%229%22 x2=%229.01%22 y2=%229%22 stroke-width=%223%22/><line x1=%2215%22 y1=%229%22 x2=%2215.01%22 y2=%229%22 stroke-width=%223%22/></svg>">
+  <link rel="stylesheet" href="/static/style.css?v=11" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="login-overlay" class="login-overlay" style="display:none;">
+  <div class="login-box">
+    <div class="brand-icon" style="margin: 0 auto 16px; width: 48px; height: 48px; color: var(--primary);">
+      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+        <path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="3"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="3"/>
+      </svg>
+    </div>
+    <h2>System Access</h2>
+    <p>Please enter your authorization code to continue.</p>
+    <form onsubmit="submitLogin(event)">
+      <input type="password" id="login-pass" class="field-input" placeholder="Authorization Code" autocomplete="current-password" autofocus />
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">Authenticate</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+<div id="alert-overlay" role="alertdialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeAlert()"></div>
+  <div class="modal-dialog modal-danger">
+    <div class="modal-icon-ring danger">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <h2 class="modal-title">Unauthorized Subject Detected</h2>
+    <p class="modal-body">An unregistered individual has been captured in the live feed. Review and enroll the subject or flag for security review.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAlert()">Dismiss</button>
+      <button class="btn btn-danger" onclick="closeAlert()">Acknowledge Alert</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ── TOPBAR ─────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="3"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="3"/>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">FaceRecog</span>
+          <span class="brand-sub">Enterprise Vision Engine</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="mode-switcher" id="mode-switcher">
+        <button class="mode-btn active" id="mode-recognize" onclick="setMode('recognize')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Recognition
+        </button>
+        <button class="mode-btn" id="mode-detect" onclick="setMode('detect')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+          Detection
+        </button>
+      </div>
+    </div>
+
+      <div class="topbar-right">
+        <div class="ws-badge" id="ws-status">
+          <span class="ws-dot"></span>
+          <span id="ws-text">Connecting…</span>
+        </div>
+        <div class="divider-v"></div>
+        <button class="icon-btn" onclick="toggleTheme()" id="theme-toggle" title="Toggle theme">
+          <svg id="theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleFullscreen()" title="Fullscreen Demo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+        <button class="btn btn-ghost admin-only" id="btn-reset-demo" onclick="resetDemo()" title="Reset Demo for next person" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+          Reset Demo
+        </button>
+        <button class="btn btn-ghost" onclick="exportAttendance()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+  </header>
+
+  <!-- ── MAIN WORKSPACE ─────────────────────────────── -->
+  <div class="workspace">
+
+    <!-- LEFT PANEL: Controls -->
+    <aside class="panel panel-left">
+
+      <!-- Camera Control Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            Camera Feed
+          </span>
+          <span class="fps-chip" id="fps-badge">-- FPS</span>
+        </div>
+        <div class="card-body">
+          <button class="btn btn-primary btn-full" id="cam-btn" onclick="toggleCamera()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Engage Live Feed
+          </button>
+        </div>
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-val" id="stat-faces">0</span>
+            <span class="stat-lbl">Detected</span>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <span class="stat-val success" id="stat-known">0</span>
+            <span class="stat-lbl">Authorized</span>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <span class="stat-val danger" id="stat-unknown">0</span>
+            <span class="stat-lbl">Unknown</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            Enroll Subject
+          </span>
+        </div>
+        <div class="card-body">
+          <form id="reg-form" onsubmit="registerFace(event)">
+            <label class="field-label">Subject Name / ID</label>
+            <input type="text" id="reg-name" class="field-input" placeholder="e.g. John Doe" required autocomplete="off" />
+
+            <div class="enroll-tabs" id="enroll-tabs">
+              <div class="enroll-tab active" onclick="setEnrollTab('upload')">Upload</div>
+              <div class="enroll-tab" onclick="setEnrollTab('camera')">Camera</div>
+              <div class="enroll-tab" onclick="setEnrollTab('url')">URL</div>
+              <div class="enroll-tab" onclick="setEnrollTab('path')">Local Path</div>
+            </div>
+
+            <div id="pane-upload" class="enroll-pane active">
+              <div class="upload-area" id="upload-zone" onclick="document.getElementById('reg-file').click()">
+                <div class="upload-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <p>Click to upload</p>
+                <span>JPG, PNG — clear face photo</span>
+              </div>
+              <input type="file" id="reg-file" accept="image/*" hidden onchange="previewImage(this)" />
+            </div>
+
+            <div id="pane-camera" class="enroll-pane" style="display:none;">
+              <div class="scan-guide" id="scan-guide">
+                <div class="scan-prompt" id="scan-prompt">Click Start for 3D Face Scan</div>
+                <button type="button" class="btn btn-ghost btn-full" id="scan-btn" onclick="startFaceScan()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  Start Automated Scan
+                </button>
+                <p class="snap-hint" id="scan-status">Keep your face in the center of the camera.</p>
+              </div>
+            </div>
+
+            <div id="pane-url" class="enroll-pane" style="display:none;">
+              <input type="url" id="reg-url" class="field-input" placeholder="https://example.com/image.jpg" autocomplete="off" />
+            </div>
+
+            <div id="pane-path" class="enroll-pane" style="display:none;">
+              <input type="text" id="reg-path" class="field-input" placeholder="C:\images\face.jpg" autocomplete="off" />
+            </div>
+
+            <div class="upload-preview" id="upload-preview">
+              <img id="preview-img" src="" alt="Preview" />
+              <span id="preview-filename">Ready to enroll</span>
+            </div>
+
+            <input type="hidden" id="enroll-mode" value="upload" />
+
+            <button type="submit" class="btn btn-primary btn-full" id="reg-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Enroll Subject
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Identity DB Card -->
+      <div class="card card-flex">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Identity Database
+          </span>
+          <span class="count-badge" id="db-count">0</span>
+        </div>
+        <div class="card-body card-scroll" id="people-grid">
+          <div class="empty-hint">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <p>No subjects enrolled</p>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER: Video Feed -->
+    <main class="feed-area">
+      <div class="video-card">
+        <div class="video-wrapper">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay-canvas"></canvas>
+
+          <!-- FaceID Scanner Illusion Overlay -->
+          <div class="scan-illusion-overlay" id="scan-illusion-overlay" style="display:none;">
+            <div class="scan-mesh"></div>
+            <div class="scan-ring"></div>
+            <div class="scan-pct" id="scan-pct-text">0%</div>
+            <div class="scan-line-anim"></div>
+          </div>
+
+          <!-- Scan line overlay (decorative, dark mode) -->
+          <div class="scan-overlay" id="scan-overlay"></div>
+
+          <!-- Disconnected state -->
+          <div class="feed-idle" id="camera-off-state">
+            <div class="feed-idle-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
+            <p class="feed-idle-title">Feed Inactive</p>
+            <p class="feed-idle-sub">Click <strong>Engage Live Feed</strong> to begin real-time recognition</p>
+          </div>
+
+          <!-- Live indicator -->
+          <div class="live-badge" id="live-badge" style="display:none">
+            <span class="live-dot"></span>
+            LIVE
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: Telemetry -->
+    <aside class="panel panel-right">
+
+      <!-- Metrics -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Live Telemetry
+          </span>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-val success" id="total-today">0</div>
+            <div class="metric-key">Recognitions Today</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="unique-today">0</div>
+            <div class="metric-key">Unique Subjects</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance Log -->
+      <div class="card card-flex">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Activity Log
+          </span>
+          <div style="display:flex; gap:8px;">
+            <button class="icon-btn admin-only" id="btn-clear-log" onclick="clearActivityLog()" title="Clear Log" style="width:24px; height:24px; border:none; background:transparent; display:none">
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <span class="count-badge" id="att-count">0</span>
+          </div>
+        </div>
+        <div class="card-body card-scroll" id="attendance-list">
+          <div class="empty-hint">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <p>Awaiting activity…</p>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script src="/static/app.js?v=16"></script>
+</body>
+</html>
