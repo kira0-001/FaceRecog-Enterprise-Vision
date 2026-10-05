@@ -6,5 +6,4 @@ numpy
 opencv-python-headless
 dlib-bin
 face_recognition_models
-gradio
 

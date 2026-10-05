@@ -1,57 +1,42 @@
 """
 app.py — Hugging Face Spaces entry point.
 
-This file wraps our FastAPI app so it runs on Hugging Face's
-free Gradio SDK (port 7860). The full custom UI is preserved.
-Gradio is mounted at /gradio-info as a sub-path only.
+Runs the FastAPI app directly on port 7860 (HF Spaces required port).
+No Gradio import — HF only requires the app to listen on port 7860.
 """
 
 import os
 import sys
 import subprocess
 
-# Auto-set demo mode for all public deployments
+# ── Demo mode for all public deployments ─────────────────────────────────────
 os.environ.setdefault("APP_MODE", "demo")
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-# ── Install face_recognition WITHOUT dlib dependency ─────────────────────────
-# dlib-bin (pre-compiled) is already installed from requirements.txt.
-# Using --no-deps skips face_recognition's dlib source compilation entirely,
-# which avoids OOM and build timeouts on the free HF tier.
+# ── Install face_recognition without dlib compilation ────────────────────────
+# dlib-bin (pre-compiled wheel) is already installed from requirements.txt.
+# --no-deps skips face_recognition's own dlib source download entirely.
 print("[INFO] Installing face_recognition (no-deps, dlib-bin already present)...")
-subprocess.run(
-    [sys.executable, "-m", "pip", "install", "--no-deps", "--quiet", "face_recognition"],
-    check=False
+result = subprocess.run(
+    [sys.executable, "-m", "pip", "install", "--no-deps", "--quiet",
+     "--root-user-action=ignore", "face_recognition"],
+    check=False, capture_output=True, text=True
 )
-print("[INFO] face_recognition ready.")
+if result.returncode == 0:
+    print("[INFO] face_recognition installed successfully.")
+else:
+    print(f"[WARN] face_recognition install issue: {result.stderr[:200]}")
 
-import gradio as gr
+# ── Import the main FastAPI app ───────────────────────────────────────────────
 import uvicorn
-
-# Import the main FastAPI app (with all routes, WebSocket, etc.)
 from main import app as fastapi_app
 
-
-# ── Minimal Gradio block (satisfies HF Gradio SDK requirement) ──────────────
-# The real UI is our custom FastAPI HTML frontend, served at /
-with gr.Blocks(title="FaceRecog Enterprise Vision", theme=gr.themes.Soft()) as gradio_ui:
-    gr.Markdown("""
-    # 🎯 FaceRecog Enterprise Vision
-    **Real-time facial recognition and tracking engine.**
-
-    > **[→ Click here to open the full application dashboard](/)** 
-
-    Built with FastAPI · MediaPipe FaceMesh · dlib · WebSockets
-    """)
-
-# Mount Gradio into FastAPI at /gradio-info (does NOT replace the root UI)
-fastapi_app = gr.mount_gradio_app(fastapi_app, gradio_ui, path="/gradio-info")
-
 if __name__ == "__main__":
+    print("[INFO] Starting FaceRecog Enterprise Vision on port 7860...")
     uvicorn.run(
         fastapi_app,
         host="0.0.0.0",
-        port=7860,   # HF Spaces requires port 7860
+        port=7860,
         log_level="info"
     )
