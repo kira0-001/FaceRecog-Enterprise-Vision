@@ -15,7 +15,7 @@ short_description: Real-time face recognition with MediaPipe FaceMesh & dlib
 
 A high-performance, real-time facial recognition and tracking engine built with **FastAPI**, **WebSockets**, **MediaPipe FaceMesh**, and **Python dlib**. Features a premium dark-mode UI and a dual Admin / Public Demo mode.
 
-> 🚀 **[Live Demo →](https://504f22d8-3b45-4cf9-ae56-3bff223cbac8-00-i61i0ctk7ryc.pike.replit.dev/)**
+> 🚀 **[Live Demo →](https://face-recog-enterprise-vision--karthimrkl.replit.app/)**
 
 ---
 
