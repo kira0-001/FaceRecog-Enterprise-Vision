@@ -34,7 +34,8 @@ import uvicorn
 from main import app as fastapi_app
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    # Replit Deploy explicitly expects the app to run on port 5000
+    port = int(os.environ.get("PORT", 5000))
     print(f"[INFO] Starting FaceRecog Enterprise Vision on port {port}...")
     uvicorn.run(
         fastapi_app,
@@ -42,3 +43,4 @@ if __name__ == "__main__":
         port=port,
         log_level="info"
     )
+
