@@ -88,10 +88,6 @@ def _download_if_missing(path: Path, url: str):
         except Exception as e:
             print(f"[WARN] Could not download {path.name}: {e}")
 
-_download_if_missing(_CAFFEMODEL_PATH, _CAFFEMODEL_URL)
-_download_if_missing(_PROTOTXT_PATH,   _PROTOTXT_URL)
-
-
 # ── Import processing helpers from Face_rec ──────────────────────────────────
 sys.path.insert(0, str(BASE_DIR / "Face_rec"))
 try:
@@ -105,10 +101,18 @@ except ImportError:
 from face_db import FaceDB
 db = FaceDB()
 
-# ── DNN Detector — loaded once at startup ────────────────────────────────────
+# ── DNN Detector — loaded in background ────────────────────────────────────
 _net = None
-if processing:
-    _net = processing.load_dnn_detector_if_available()
+
+def _background_setup():
+    _download_if_missing(_CAFFEMODEL_PATH, _CAFFEMODEL_URL)
+    _download_if_missing(_PROTOTXT_PATH,   _PROTOTXT_URL)
+    global _net
+    if processing:
+        _net = processing.load_dnn_detector_if_available()
+
+import threading
+threading.Thread(target=_background_setup, daemon=True).start()
 
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(title="FaceRecog API", version="3.0")
